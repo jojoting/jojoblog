@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="https://dingtz.com/"/>
-  <updated>2016-08-09T14:39:28.000Z</updated>
+  <updated>2016-12-18T09:34:58.000Z</updated>
   <id>https://dingtz.com/</id>
   
   <author>
@@ -14,6 +14,250 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>iOS9 UniversalLink（直达链接）开发</title>
+    <link href="https://dingtz.com/2016/12/18/Link%EF%BC%88%E7%9B%B4%E8%BE%BE%E9%93%BE%E6%8E%A5%EF%BC%89%E5%BC%80%E5%8F%91/"/>
+    <id>https://dingtz.com/2016/12/18/Link（直达链接）开发/</id>
+    <published>2016-12-18T09:30:13.000Z</published>
+    <updated>2016-12-18T09:34:58.000Z</updated>
+    
+    <content type="html"><![CDATA[<p>###背景<br>在iOS 9以前，我们从外部启动App都是通过URL Scheme实现跳转的。这种方式虽然可自定程度很高，能够巧妙地实现很多跳转，但弊端也很明显：我们只能通过scheme://example这种格式的链接来实现跳转，而且现在苹果还对这种方式的跳转加了一个提示框：“是否打开XXX”。对于对Web和原生App交互的场景需求量很大的产品来说，这样的跳转方式显然是步骤冗杂的，用户体验并不好。</p>
+<p>iOS 9以后，Universal Link的出现解决了这个问题。它所提供的直接、顺畅、无缝衔接的跳转能够让用户体验提升一个级别。用户可以点击开发者指定的类似于<code>https://example.com/t</code>的URL直接唤醒App，而不需要在浏览器打开再点击其他按钮。</p>
+<p>在你的App中添加这个功能很简单：</p>
+<blockquote>
+<ul>
+<li><p>在<a href="https://developer.apple.com/account/" target="_blank" rel="external">苹果开发者网站</a>中打开需要使用Universal Link功能的App中的Associated Domains</p>
+</li>
+<li><p>上传apple-app-site-association到服务器根目录下</p>
+</li>
+<li><p>在AppDelegate中实现相应的方法</p>
+</li>
+</ul>
+</blockquote>
+<p>###配置<br>首先，我们要在<a href="https://developer.apple.com/account/" target="_blank" rel="external">苹果开发者网站</a>中开启App的Associated Domains功能。</p>
+<p>在<em>Account -&gt; Certificates, Identifiers &amp; Profiles -&gt; App IDs -&gt; YourApp -&gt; Edit</em>中把Associated Domains设置为Enable</p>
+<p>然后我们需要配置一下工程文件，找到<em>Capabilities -&gt; Associated Domains</em></p>
+<p>打开此功能并把你需要跳转的domain加进去，格式为<code>applinks://www.example.com</code></p>
+<p><img src="http://upload-images.jianshu.io/upload_images/797083-d529f0746b0b6cc0.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt="Paste_Image.png"></p>
+<p>###部署</p>
+<blockquote>
+<p>####注意</p>
+<p>首先你的服务器必须得支持SSL</p>
+</blockquote>
+<p>接下来，我们需要上传一个json文件到我们的服务器。json文件以apple-app-site-association命名</p>
+<blockquote>
+<p>####注意</p>
+<p>文件不需要添加任何后缀</p>
+</blockquote>
+<p>json的格式是这样的:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">&#123;</div><div class="line">  &quot;applinks&quot;: &#123;</div><div class="line">    &quot;apps&quot;: [],</div><div class="line">    &quot;details&quot;: [</div><div class="line">      &#123;</div><div class="line">        &quot;appID&quot;: &quot;TeamID.com.domain.App&quot;,</div><div class="line">        &quot;paths&quot;:[ &quot;*&quot; ]</div><div class="line">      &#125;</div><div class="line">    ]</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<ul>
+<li><p><code>appID</code>：TeamID加上Bundle ID</p>
+</li>
+<li><p><code>paths</code>：支持Universal Link，也就是可以跳转的路径。<code>*</code>代表此域名下所有路径都支持，也可以具体制定到某个页面例如<code>/path/page</code>或者某个路径下所有URL例如<code>/path/*</code></p>
+</li>
+</ul>
+<p>关于<code>paths</code>的配置，可以参考苹果官方文档</p>
+<blockquote>
+<ul>
+<li><p>Use * to specify your entire website</p>
+</li>
+<li><p>Include a specific URL, such as /wwdc/news/, to specify a particular link</p>
+</li>
+<li><p>Append <em> to a specific URL, such as /videos/wwdc/2015/</em>, to specify a section of your website</p>
+</li>
+<li><p>In addition to using <em> to match any substring, you can also use ? to match any single character. You can combine both wildcards in a single path, such as /foo/</em>/bar/201?/mypage.</p>
+</li>
+</ul>
+</blockquote>
+<p>最后，我们只需要把配置好的json文件上传到服务器中该域名的根目录下，言下之意，我们可以用GET请求可以获取到<code>https://www.example.com/apple-app-association</code> </p>
+<blockquote>
+<p><strong>再次强调必须是HTTPS协议</strong></p>
+</blockquote>
+<p>当我们的App在设备上第一次运行时，如果支持Associated Domains功能，那么iOS会自动去GET定义的Domain下的<code>apple-app-site-association</code>文件。</p>
+<p>需要留意iOS会先请求<code>https://domain.com/.well-known/apple-app-site-association</code>如果此文件请求不到，再去请求<code>https://domain.com/apple-app-site-association</code></p>
+<p>所以如果想要避免服务器接收过多GET请求，可以直接把<code>apple-app-site-association</code>放在<code>./well-known/</code>目录下</p>
+<blockquote>
+<p>####注意</p>
+<p>服务器上<code>apple-app-site-association</code>的更新不会让iOS本地的<code>apple-app-site-association</code>同步更新，即iOS只会在App第一次启动时请求一次，以后除非App更新或重新安装否则不会在每次打开时请求<code>apple-app-site-association</code></p>
+</blockquote>
+<p>###开发<br>待我们服务器部署好了，用curl测试一下<code>apple-app-site-association</code>能够正确GET到了,那么我们就需要在工程中响应跳转事件了。</p>
+<p>我们在AppDelegate中实现如下代理方法：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">- (<span class="built_in">BOOL</span>)application:(<span class="built_in">UIApplication</span> *)application continueUserActivity:(<span class="built_in">NSUserActivity</span> *)userActivity restorationHandler:(<span class="keyword">void</span> (^)(<span class="built_in">NSArray</span> * _Nullable))restorationHandler&#123;</div></pre></td></tr></table></figure>
+<p>具体实现：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div></pre></td><td class="code"><pre><div class="line">- (<span class="built_in">BOOL</span>)application:(<span class="built_in">UIApplication</span> *)application continueUserActivity:(<span class="built_in">NSUserActivity</span> *)userActivity restorationHandler:(<span class="keyword">void</span> (^)(<span class="built_in">NSArray</span> * _Nullable))restorationHandler&#123;</div><div class="line">    </div><div class="line">    <span class="keyword">if</span> (![userActivity.activityType isEqualToString:<span class="built_in">NSUserActivityTypeBrowsingWeb</span>]) &#123;</div><div class="line">        <span class="keyword">return</span> <span class="literal">YES</span>;</div><div class="line">    &#125;</div><div class="line">    </div><div class="line">    <span class="comment">//读取url地址</span></div><div class="line">    <span class="built_in">NSURL</span> *webUrl = userActivity.webpageURL;</div><div class="line">    </div><div class="line">    </div><div class="line">    <span class="keyword">if</span> (![webUrl.path isEqualToString:<span class="string">@"/show"</span>]) &#123;</div><div class="line">        <span class="comment">//path错误，直接从safari打开</span></div><div class="line">        [[<span class="built_in">UIApplication</span> sharedApplication] openURL:webUrl];</div><div class="line">        <span class="keyword">return</span> <span class="literal">YES</span>;</div><div class="line">    &#125;</div><div class="line">    <span class="comment">//跳转并显示内容</span></div><div class="line">    [[<span class="built_in">NSNotificationCenter</span> defaultCenter] postNotificationName:<span class="string">@"notify"</span> object:<span class="string">@"hello world"</span>];</div><div class="line"></div><div class="line">    </div><div class="line">    <span class="keyword">return</span> <span class="literal">YES</span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>这里的自由度就很高了，我们可以根据传入的任何符合跳转条件的URL进行不同的操作。</p>
+<p>###测试<br>现在一切都已经完成了，现在我们可以在短信中点击一个URL直接跳转到我们的App。至于如何检验URL是否能够跳转，一个快捷方便的方法就是在系统原生App中（如短信、邮件等）长按URL，如果弹出的选项中有<strong><em>在“your app”中打开</em></strong>，那么证明该URL是支持跳转的。</p>
+<blockquote>
+<p>####注意</p>
+<p>非系统原生App不一定能支持直接点击URL跳转，例如在微信中点击URL会首先在微信内的WebView打开，如果要跳转只能再通过Safari打开。</p>
+</blockquote>
+<a id="more"></a>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;###背景&lt;br&gt;在iOS 9以前，我们从外部启动App都是通过URL Scheme实现跳转的。这种方式虽然可自定程度很高，能够巧妙地实现很多跳转，但弊端也很明显：我们只能通过scheme://example这种格式的链接来实现跳转，而且现在苹果还对这种方式的跳转加了一个提示框：“是否打开XXX”。对于对Web和原生App交互的场景需求量很大的产品来说，这样的跳转方式显然是步骤冗杂的，用户体验并不好。&lt;/p&gt;
+&lt;p&gt;iOS 9以后，Universal Link的出现解决了这个问题。它所提供的直接、顺畅、无缝衔接的跳转能够让用户体验提升一个级别。用户可以点击开发者指定的类似于&lt;code&gt;https://example.com/t&lt;/code&gt;的URL直接唤醒App，而不需要在浏览器打开再点击其他按钮。&lt;/p&gt;
+&lt;p&gt;在你的App中添加这个功能很简单：&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;在&lt;a href=&quot;https://developer.apple.com/account/&quot;&gt;苹果开发者网站&lt;/a&gt;中打开需要使用Universal Link功能的App中的Associated Domains&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;上传apple-app-site-association到服务器根目录下&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;在AppDelegate中实现相应的方法&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;###配置&lt;br&gt;首先，我们要在&lt;a href=&quot;https://developer.apple.com/account/&quot;&gt;苹果开发者网站&lt;/a&gt;中开启App的Associated Domains功能。&lt;/p&gt;
+&lt;p&gt;在&lt;em&gt;Account -&amp;gt; Certificates, Identifiers &amp;amp; Profiles -&amp;gt; App IDs -&amp;gt; YourApp -&amp;gt; Edit&lt;/em&gt;中把Associated Domains设置为Enable&lt;/p&gt;
+&lt;p&gt;然后我们需要配置一下工程文件，找到&lt;em&gt;Capabilities -&amp;gt; Associated Domains&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;打开此功能并把你需要跳转的domain加进去，格式为&lt;code&gt;applinks://www.example.com&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;http://upload-images.jianshu.io/upload_images/797083-d529f0746b0b6cc0.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240&quot; alt=&quot;Paste_Image.png&quot;&gt;&lt;/p&gt;
+&lt;p&gt;###部署&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;####注意&lt;/p&gt;
+&lt;p&gt;首先你的服务器必须得支持SSL&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;接下来，我们需要上传一个json文件到我们的服务器。json文件以apple-app-site-association命名&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;####注意&lt;/p&gt;
+&lt;p&gt;文件不需要添加任何后缀&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;json的格式是这样的:&lt;/p&gt;
+&lt;figure class=&quot;highlight plain&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;div class=&quot;line&quot;&gt;1&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;2&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;3&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;4&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;5&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;6&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;7&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;8&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;9&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;10&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;11&lt;/div&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;div class=&quot;line&quot;&gt;&amp;#123;&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;  &amp;quot;applinks&amp;quot;: &amp;#123;&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;    &amp;quot;apps&amp;quot;: [],&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;    &amp;quot;details&amp;quot;: [&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;      &amp;#123;&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;        &amp;quot;appID&amp;quot;: &amp;quot;TeamID.com.domain.App&amp;quot;,&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;        &amp;quot;paths&amp;quot;:[ &amp;quot;*&amp;quot; ]&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;      &amp;#125;&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;    ]&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;  &amp;#125;&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;&amp;#125;&lt;/div&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;&lt;code&gt;appID&lt;/code&gt;：TeamID加上Bundle ID&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;&lt;code&gt;paths&lt;/code&gt;：支持Universal Link，也就是可以跳转的路径。&lt;code&gt;*&lt;/code&gt;代表此域名下所有路径都支持，也可以具体制定到某个页面例如&lt;code&gt;/path/page&lt;/code&gt;或者某个路径下所有URL例如&lt;code&gt;/path/*&lt;/code&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;关于&lt;code&gt;paths&lt;/code&gt;的配置，可以参考苹果官方文档&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Use * to specify your entire website&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;Include a specific URL, such as /wwdc/news/, to specify a particular link&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;Append &lt;em&gt; to a specific URL, such as /videos/wwdc/2015/&lt;/em&gt;, to specify a section of your website&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;In addition to using &lt;em&gt; to match any substring, you can also use ? to match any single character. You can combine both wildcards in a single path, such as /foo/&lt;/em&gt;/bar/201?/mypage.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;最后，我们只需要把配置好的json文件上传到服务器中该域名的根目录下，言下之意，我们可以用GET请求可以获取到&lt;code&gt;https://www.example.com/apple-app-association&lt;/code&gt; &lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;strong&gt;再次强调必须是HTTPS协议&lt;/strong&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;当我们的App在设备上第一次运行时，如果支持Associated Domains功能，那么iOS会自动去GET定义的Domain下的&lt;code&gt;apple-app-site-association&lt;/code&gt;文件。&lt;/p&gt;
+&lt;p&gt;需要留意iOS会先请求&lt;code&gt;https://domain.com/.well-known/apple-app-site-association&lt;/code&gt;如果此文件请求不到，再去请求&lt;code&gt;https://domain.com/apple-app-site-association&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;所以如果想要避免服务器接收过多GET请求，可以直接把&lt;code&gt;apple-app-site-association&lt;/code&gt;放在&lt;code&gt;./well-known/&lt;/code&gt;目录下&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;####注意&lt;/p&gt;
+&lt;p&gt;服务器上&lt;code&gt;apple-app-site-association&lt;/code&gt;的更新不会让iOS本地的&lt;code&gt;apple-app-site-association&lt;/code&gt;同步更新，即iOS只会在App第一次启动时请求一次，以后除非App更新或重新安装否则不会在每次打开时请求&lt;code&gt;apple-app-site-association&lt;/code&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;###开发&lt;br&gt;待我们服务器部署好了，用curl测试一下&lt;code&gt;apple-app-site-association&lt;/code&gt;能够正确GET到了,那么我们就需要在工程中响应跳转事件了。&lt;/p&gt;
+&lt;p&gt;我们在AppDelegate中实现如下代理方法：&lt;/p&gt;
+&lt;figure class=&quot;highlight objc&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;div class=&quot;line&quot;&gt;1&lt;/div&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;div class=&quot;line&quot;&gt;- (&lt;span class=&quot;built_in&quot;&gt;BOOL&lt;/span&gt;)application:(&lt;span class=&quot;built_in&quot;&gt;UIApplication&lt;/span&gt; *)application continueUserActivity:(&lt;span class=&quot;built_in&quot;&gt;NSUserActivity&lt;/span&gt; *)userActivity restorationHandler:(&lt;span class=&quot;keyword&quot;&gt;void&lt;/span&gt; (^)(&lt;span class=&quot;built_in&quot;&gt;NSArray&lt;/span&gt; * _Nullable))restorationHandler&amp;#123;&lt;/div&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;p&gt;具体实现：&lt;/p&gt;
+&lt;figure class=&quot;highlight objc&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;div class=&quot;line&quot;&gt;1&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;2&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;3&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;4&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;5&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;6&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;7&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;8&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;9&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;10&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;11&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;12&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;13&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;14&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;15&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;16&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;17&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;18&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;19&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;20&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;21&lt;/div&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;div class=&quot;line&quot;&gt;- (&lt;span class=&quot;built_in&quot;&gt;BOOL&lt;/span&gt;)application:(&lt;span class=&quot;built_in&quot;&gt;UIApplication&lt;/span&gt; *)application continueUserActivity:(&lt;span class=&quot;built_in&quot;&gt;NSUserActivity&lt;/span&gt; *)userActivity restorationHandler:(&lt;span class=&quot;keyword&quot;&gt;void&lt;/span&gt; (^)(&lt;span class=&quot;built_in&quot;&gt;NSArray&lt;/span&gt; * _Nullable))restorationHandler&amp;#123;&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;    &lt;/div&gt;&lt;div class=&quot;line&quot;&gt;    &lt;span class=&quot;keyword&quot;&gt;if&lt;/span&gt; (![userActivity.activityType isEqualToString:&lt;span class=&quot;built_in&quot;&gt;NSUserActivityTypeBrowsingWeb&lt;/span&gt;]) &amp;#123;&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;        &lt;span class=&quot;keyword&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;literal&quot;&gt;YES&lt;/span&gt;;&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;    &amp;#125;&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;    &lt;/div&gt;&lt;div class=&quot;line&quot;&gt;    &lt;span class=&quot;comment&quot;&gt;//读取url地址&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;    &lt;span class=&quot;built_in&quot;&gt;NSURL&lt;/span&gt; *webUrl = userActivity.webpageURL;&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;    &lt;/div&gt;&lt;div class=&quot;line&quot;&gt;    &lt;/div&gt;&lt;div class=&quot;line&quot;&gt;    &lt;span class=&quot;keyword&quot;&gt;if&lt;/span&gt; (![webUrl.path isEqualToString:&lt;span class=&quot;string&quot;&gt;@&quot;/show&quot;&lt;/span&gt;]) &amp;#123;&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;        &lt;span class=&quot;comment&quot;&gt;//path错误，直接从safari打开&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;        [[&lt;span class=&quot;built_in&quot;&gt;UIApplication&lt;/span&gt; sharedApplication] openURL:webUrl];&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;        &lt;span class=&quot;keyword&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;literal&quot;&gt;YES&lt;/span&gt;;&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;    &amp;#125;&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;    &lt;span class=&quot;comment&quot;&gt;//跳转并显示内容&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;    [[&lt;span class=&quot;built_in&quot;&gt;NSNotificationCenter&lt;/span&gt; defaultCenter] postNotificationName:&lt;span class=&quot;string&quot;&gt;@&quot;notify&quot;&lt;/span&gt; object:&lt;span class=&quot;string&quot;&gt;@&quot;hello world&quot;&lt;/span&gt;];&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;    &lt;/div&gt;&lt;div class=&quot;line&quot;&gt;    &lt;span class=&quot;keyword&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;literal&quot;&gt;YES&lt;/span&gt;;&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;&amp;#125;&lt;/div&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;p&gt;这里的自由度就很高了，我们可以根据传入的任何符合跳转条件的URL进行不同的操作。&lt;/p&gt;
+&lt;p&gt;###测试&lt;br&gt;现在一切都已经完成了，现在我们可以在短信中点击一个URL直接跳转到我们的App。至于如何检验URL是否能够跳转，一个快捷方便的方法就是在系统原生App中（如短信、邮件等）长按URL，如果弹出的选项中有&lt;strong&gt;&lt;em&gt;在“your app”中打开&lt;/em&gt;&lt;/strong&gt;，那么证明该URL是支持跳转的。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;####注意&lt;/p&gt;
+&lt;p&gt;非系统原生App不一定能支持直接点击URL跳转，例如在微信中点击URL会首先在微信内的WebView打开，如果要跳转只能再通过Safari打开。&lt;/p&gt;
+&lt;/blockquote&gt;
+    
+    </summary>
+    
+    
+      <category term="iOS" scheme="https://dingtz.com/tags/iOS/"/>
+    
+      <category term="Dev" scheme="https://dingtz.com/tags/Dev/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>使用presentingViewController属性可能会遇到的坑</title>
+    <link href="https://dingtz.com/2016/12/18/%E4%BD%BF%E7%94%A8presentingViewcontroller%E5%B1%9E%E6%80%A7%E5%8F%AF%E8%83%BD%E4%BC%9A%E9%81%87%E5%88%B0%E7%9A%84%E5%9D%91/"/>
+    <id>https://dingtz.com/2016/12/18/使用presentingViewcontroller属性可能会遇到的坑/</id>
+    <published>2016-12-18T09:14:51.000Z</published>
+    <updated>2016-12-18T09:35:31.000Z</updated>
+    
+    <content type="html"><![CDATA[<h3 id="场景"><a href="#场景" class="headerlink" title="场景"></a>场景</h3><p>假设现在有这样一个场景，我有一个根导航控制器<code>RootNavigationController</code>，它的根视图控制器<code>ViewController</code>有一个子控制器<code>UINavigationController</code>，这个导航控制器的根控制器是<code>FirstViewController</code>。</p>
+<p>在<code>FirstViewController</code>中，添加一个方法使用<code>presentModelViewController</code>的方式跳转到另一个根控制器为<code>NextViewController</code>的<code>UINavigationController</code></p>
+<p><img src="http://upload-images.jianshu.io/upload_images/797083-a034d3bd0033a0a3.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt="控制器层级"></p>
+<p>如果<code>NextViewController</code>中获取它的<code>presentingViewController</code>属性，结果得到的是<code>RootNavigationController</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">2016-12-18 10:34:09.548 PresentVCDemo[27202:22455163] viewDidLoad &lt;RootNavigationController: 0x7ff29f83ba00&gt;</div><div class="line">2016-12-18 10:34:09.549 PresentVCDemo[27202:22455163] viewDidLoad &lt;ViewController: 0x7ff29de05870&gt;</div><div class="line">2016-12-18 10:34:09.572 PresentVCDemo[27202:22455163] viewDidLoad &lt;UINavigationController: 0x7ff29f022a00&gt;</div><div class="line">2016-12-18 10:34:09.573 PresentVCDemo[27202:22455163] viewDidLoad &lt;FirstViewController: 0x7ff29dc0c680&gt;</div><div class="line">2016-12-18 10:34:52.785 PresentVCDemo[27202:22455163] Presenting Controller : &lt;RootNavigationController: 0x7ff29f83ba00&gt;</div></pre></td></tr></table></figure>
+<h3 id="原因"><a href="#原因" class="headerlink" title="原因"></a>原因</h3><p>苹果官方的<a href="https://developer.apple.com/library/content/featuredarticles/ViewControllerPGforiPhoneOS/PresentingaViewController.html#//apple_ref/doc/uid/TP40007457-CH14-SW7" target="_blank" rel="external">ViewController Programming Guide</a>中关于<strong>Presenting a View Controller</strong>的部分是这样说的</p>
+<blockquote>
+<p>The view controller that calls the presentViewController:animated:completion: method may not be the one that actually performs the modal presentation. The presentation style determines how that view controller is to be presented, including the characteristics required of the presenting view controller. </p>
+</blockquote>
+<p>也就是说，在调用<code>presentViewController:animated:completion:</code>方法时，真正作为跳转的容器并不一定是调用这个方法的view controller，而是取决于<code>modalPresentationStyle</code>。例如，一个全屏的跳转必须由一个全屏的view controller来完成。如果当前的控制器不能满足，那么系统会自动沿着视图控制器的层级向上查找。</p>
+<p>在我们的层级中，只有两个<code>UINavigationController</code>是全屏的，因此，这两个控制器都有可能成为最终跳转的容器。可是为什么最终是<code>RootNavigationController</code>完成了这次跳转而不是<code>FirstViewController</code>的导航控制器呢？</p>
+<p>在<a href="https://developer.apple.com/library/content/featuredarticles/ViewControllerPGforiPhoneOS/TheViewControllerHierarchy.html#//apple_ref/doc/uid/TP40007457-CH33-SW1" target="_blank" rel="external">The View Controller Hierachy</a>关于Presented View Controller中找到了这样一句话：</p>
+<blockquote>
+<p>When you present a view controller, UIKit looks for a view controller that provides a suitable context for the presentation. In many cases, UIKit chooses the nearest container view controller but it might also choose the window’s root view controller.</p>
+</blockquote>
+<p>因此，在一开始提到的场景中，UIKit帮我们选择了UIWindow的根视图控制器，而不是<code>FirstViewController</code>的导航控制器。</p>
+<h3 id="解决"><a href="#解决" class="headerlink" title="解决"></a>解决</h3><p>在某些特定的业务需求中，我们需要利用<code>presentingViewController</code>拿到<code>FirstViewController</code>的导航控制器。</p>
+<p>解决这个需求，我们需要用到一对属性<br><figure class="highlight objc"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">@property</span>(<span class="keyword">nonatomic</span>,<span class="keyword">assign</span>) <span class="built_in">BOOL</span> definesPresentationContext;</div><div class="line"><span class="keyword">@property</span>(<span class="keyword">nonatomic</span>,<span class="keyword">assign</span>) <span class="built_in">UIModalPresentationStyle</span> modalPresentationStyle;</div></pre></td></tr></table></figure></p>
+<p><code>modalPresentationStyle</code>属性决定了将要present的控制器以何种方式展现，默认值为<code>UIModalTransitionStyleCoverVertical</code></p>
+<p><code>definesPresentationContext</code>就有点神奇了，他的注释文档是这么写的</p>
+<blockquote>
+<p>Determines which parent view controller’s view should be presented over for presentations of type UIModalPresentationCurrentContext.  If no ancestor view controller has this flag set, then the presenter will be the root view controller.</p>
+</blockquote>
+<p>简单来说，如果把一个控制器的<code>definesPresentationContext</code>属性设置为YES，那么在需要进行<code>UIModalPresentationCurrentContext</code>类型的跳转的时候，UIKit会使用视图层级内的这个控制器来进行跳转。</p>
+<p>在<code>FirstViewController</code>中加入下面的代码<br><figure class="highlight objc"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">[<span class="keyword">self</span>.navigationController setDefinesPresentationContext:<span class="literal">YES</span>];</div></pre></td></tr></table></figure></p>
+<p>并在跳转的时候设置目标控制器的<code>modalPresentationStyle</code></p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">[nav setModalPresentationStyle:<span class="built_in">UIModalPresentationCurrentContext</span>];</div><div class="line">[<span class="keyword">self</span> presentViewController:nav animated:<span class="literal">YES</span> completion:<span class="literal">nil</span>];</div></pre></td></tr></table></figure>
+<p>接下来看一下Log日志<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">2016-12-18 11:59:20.041 PresentVCDemo[32336:22885768] viewDidLoad &lt;RootNavigationController: 0x7fd6f4810600&gt;</div><div class="line">2016-12-18 11:59:20.042 PresentVCDemo[32336:22885768] viewDidLoad &lt;ViewController: 0x7fd6f2c04110&gt;</div><div class="line">2016-12-18 11:59:20.052 PresentVCDemo[32336:22885768] viewDidLoad &lt;UINavigationController: 0x7fd6f381ce00&gt;</div><div class="line">2016-12-18 11:59:20.052 PresentVCDemo[32336:22885768] viewDidLoad &lt;FirstViewController: 0x7fd6f2f090c0&gt;</div><div class="line">2016-12-18 11:59:20.920 PresentVCDemo[32336:22885768] Presenting Controller : &lt;UINavigationController: 0x7fd6f381ce00&gt;</div></pre></td></tr></table></figure></p>
+<p>大功告成！现在<code>presentingViewController</code>能够获取到我们期望的对象了。</p>
+<a id="more"></a>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h3 id=&quot;场景&quot;&gt;&lt;a href=&quot;#场景&quot; class=&quot;headerlink&quot; title=&quot;场景&quot;&gt;&lt;/a&gt;场景&lt;/h3&gt;&lt;p&gt;假设现在有这样一个场景，我有一个根导航控制器&lt;code&gt;RootNavigationController&lt;/code&gt;，它的根视图控制器&lt;code&gt;ViewController&lt;/code&gt;有一个子控制器&lt;code&gt;UINavigationController&lt;/code&gt;，这个导航控制器的根控制器是&lt;code&gt;FirstViewController&lt;/code&gt;。&lt;/p&gt;
+&lt;p&gt;在&lt;code&gt;FirstViewController&lt;/code&gt;中，添加一个方法使用&lt;code&gt;presentModelViewController&lt;/code&gt;的方式跳转到另一个根控制器为&lt;code&gt;NextViewController&lt;/code&gt;的&lt;code&gt;UINavigationController&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;http://upload-images.jianshu.io/upload_images/797083-a034d3bd0033a0a3.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240&quot; alt=&quot;控制器层级&quot;&gt;&lt;/p&gt;
+&lt;p&gt;如果&lt;code&gt;NextViewController&lt;/code&gt;中获取它的&lt;code&gt;presentingViewController&lt;/code&gt;属性，结果得到的是&lt;code&gt;RootNavigationController&lt;/code&gt;&lt;/p&gt;
+&lt;figure class=&quot;highlight plain&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;div class=&quot;line&quot;&gt;1&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;2&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;3&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;4&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;5&lt;/div&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;div class=&quot;line&quot;&gt;2016-12-18 10:34:09.548 PresentVCDemo[27202:22455163] viewDidLoad &amp;lt;RootNavigationController: 0x7ff29f83ba00&amp;gt;&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;2016-12-18 10:34:09.549 PresentVCDemo[27202:22455163] viewDidLoad &amp;lt;ViewController: 0x7ff29de05870&amp;gt;&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;2016-12-18 10:34:09.572 PresentVCDemo[27202:22455163] viewDidLoad &amp;lt;UINavigationController: 0x7ff29f022a00&amp;gt;&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;2016-12-18 10:34:09.573 PresentVCDemo[27202:22455163] viewDidLoad &amp;lt;FirstViewController: 0x7ff29dc0c680&amp;gt;&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;2016-12-18 10:34:52.785 PresentVCDemo[27202:22455163] Presenting Controller : &amp;lt;RootNavigationController: 0x7ff29f83ba00&amp;gt;&lt;/div&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;h3 id=&quot;原因&quot;&gt;&lt;a href=&quot;#原因&quot; class=&quot;headerlink&quot; title=&quot;原因&quot;&gt;&lt;/a&gt;原因&lt;/h3&gt;&lt;p&gt;苹果官方的&lt;a href=&quot;https://developer.apple.com/library/content/featuredarticles/ViewControllerPGforiPhoneOS/PresentingaViewController.html#//apple_ref/doc/uid/TP40007457-CH14-SW7&quot;&gt;ViewController Programming Guide&lt;/a&gt;中关于&lt;strong&gt;Presenting a View Controller&lt;/strong&gt;的部分是这样说的&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;The view controller that calls the presentViewController:animated:completion: method may not be the one that actually performs the modal presentation. The presentation style determines how that view controller is to be presented, including the characteristics required of the presenting view controller. &lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;也就是说，在调用&lt;code&gt;presentViewController:animated:completion:&lt;/code&gt;方法时，真正作为跳转的容器并不一定是调用这个方法的view controller，而是取决于&lt;code&gt;modalPresentationStyle&lt;/code&gt;。例如，一个全屏的跳转必须由一个全屏的view controller来完成。如果当前的控制器不能满足，那么系统会自动沿着视图控制器的层级向上查找。&lt;/p&gt;
+&lt;p&gt;在我们的层级中，只有两个&lt;code&gt;UINavigationController&lt;/code&gt;是全屏的，因此，这两个控制器都有可能成为最终跳转的容器。可是为什么最终是&lt;code&gt;RootNavigationController&lt;/code&gt;完成了这次跳转而不是&lt;code&gt;FirstViewController&lt;/code&gt;的导航控制器呢？&lt;/p&gt;
+&lt;p&gt;在&lt;a href=&quot;https://developer.apple.com/library/content/featuredarticles/ViewControllerPGforiPhoneOS/TheViewControllerHierarchy.html#//apple_ref/doc/uid/TP40007457-CH33-SW1&quot;&gt;The View Controller Hierachy&lt;/a&gt;关于Presented View Controller中找到了这样一句话：&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;When you present a view controller, UIKit looks for a view controller that provides a suitable context for the presentation. In many cases, UIKit chooses the nearest container view controller but it might also choose the window’s root view controller.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;因此，在一开始提到的场景中，UIKit帮我们选择了UIWindow的根视图控制器，而不是&lt;code&gt;FirstViewController&lt;/code&gt;的导航控制器。&lt;/p&gt;
+&lt;h3 id=&quot;解决&quot;&gt;&lt;a href=&quot;#解决&quot; class=&quot;headerlink&quot; title=&quot;解决&quot;&gt;&lt;/a&gt;解决&lt;/h3&gt;&lt;p&gt;在某些特定的业务需求中，我们需要利用&lt;code&gt;presentingViewController&lt;/code&gt;拿到&lt;code&gt;FirstViewController&lt;/code&gt;的导航控制器。&lt;/p&gt;
+&lt;p&gt;解决这个需求，我们需要用到一对属性&lt;br&gt;&lt;figure class=&quot;highlight objc&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;div class=&quot;line&quot;&gt;1&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;2&lt;/div&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;div class=&quot;line&quot;&gt;&lt;span class=&quot;keyword&quot;&gt;@property&lt;/span&gt;(&lt;span class=&quot;keyword&quot;&gt;nonatomic&lt;/span&gt;,&lt;span class=&quot;keyword&quot;&gt;assign&lt;/span&gt;) &lt;span class=&quot;built_in&quot;&gt;BOOL&lt;/span&gt; definesPresentationContext;&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;&lt;span class=&quot;keyword&quot;&gt;@property&lt;/span&gt;(&lt;span class=&quot;keyword&quot;&gt;nonatomic&lt;/span&gt;,&lt;span class=&quot;keyword&quot;&gt;assign&lt;/span&gt;) &lt;span class=&quot;built_in&quot;&gt;UIModalPresentationStyle&lt;/span&gt; modalPresentationStyle;&lt;/div&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;modalPresentationStyle&lt;/code&gt;属性决定了将要present的控制器以何种方式展现，默认值为&lt;code&gt;UIModalTransitionStyleCoverVertical&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;definesPresentationContext&lt;/code&gt;就有点神奇了，他的注释文档是这么写的&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Determines which parent view controller’s view should be presented over for presentations of type UIModalPresentationCurrentContext.  If no ancestor view controller has this flag set, then the presenter will be the root view controller.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;简单来说，如果把一个控制器的&lt;code&gt;definesPresentationContext&lt;/code&gt;属性设置为YES，那么在需要进行&lt;code&gt;UIModalPresentationCurrentContext&lt;/code&gt;类型的跳转的时候，UIKit会使用视图层级内的这个控制器来进行跳转。&lt;/p&gt;
+&lt;p&gt;在&lt;code&gt;FirstViewController&lt;/code&gt;中加入下面的代码&lt;br&gt;&lt;figure class=&quot;highlight objc&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;div class=&quot;line&quot;&gt;1&lt;/div&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;div class=&quot;line&quot;&gt;[&lt;span class=&quot;keyword&quot;&gt;self&lt;/span&gt;.navigationController setDefinesPresentationContext:&lt;span class=&quot;literal&quot;&gt;YES&lt;/span&gt;];&lt;/div&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;&lt;/p&gt;
+&lt;p&gt;并在跳转的时候设置目标控制器的&lt;code&gt;modalPresentationStyle&lt;/code&gt;&lt;/p&gt;
+&lt;figure class=&quot;highlight objc&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;div class=&quot;line&quot;&gt;1&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;2&lt;/div&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;div class=&quot;line&quot;&gt;[nav setModalPresentationStyle:&lt;span class=&quot;built_in&quot;&gt;UIModalPresentationCurrentContext&lt;/span&gt;];&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;[&lt;span class=&quot;keyword&quot;&gt;self&lt;/span&gt; presentViewController:nav animated:&lt;span class=&quot;literal&quot;&gt;YES&lt;/span&gt; completion:&lt;span class=&quot;literal&quot;&gt;nil&lt;/span&gt;];&lt;/div&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;p&gt;接下来看一下Log日志&lt;br&gt;&lt;figure class=&quot;highlight plain&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;div class=&quot;line&quot;&gt;1&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;2&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;3&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;4&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;5&lt;/div&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;div class=&quot;line&quot;&gt;2016-12-18 11:59:20.041 PresentVCDemo[32336:22885768] viewDidLoad &amp;lt;RootNavigationController: 0x7fd6f4810600&amp;gt;&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;2016-12-18 11:59:20.042 PresentVCDemo[32336:22885768] viewDidLoad &amp;lt;ViewController: 0x7fd6f2c04110&amp;gt;&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;2016-12-18 11:59:20.052 PresentVCDemo[32336:22885768] viewDidLoad &amp;lt;UINavigationController: 0x7fd6f381ce00&amp;gt;&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;2016-12-18 11:59:20.052 PresentVCDemo[32336:22885768] viewDidLoad &amp;lt;FirstViewController: 0x7fd6f2f090c0&amp;gt;&lt;/div&gt;&lt;div class=&quot;line&quot;&gt;2016-12-18 11:59:20.920 PresentVCDemo[32336:22885768] Presenting Controller : &amp;lt;UINavigationController: 0x7fd6f381ce00&amp;gt;&lt;/div&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;&lt;/p&gt;
+&lt;p&gt;大功告成！现在&lt;code&gt;presentingViewController&lt;/code&gt;能够获取到我们期望的对象了。&lt;/p&gt;
+    
+    </summary>
+    
+    
+      <category term="iOS" scheme="https://dingtz.com/tags/iOS/"/>
+    
+      <category term="Dev" scheme="https://dingtz.com/tags/Dev/"/>
+    
+  </entry>
   
   <entry>
     <title>NSProxy——少见却神奇的类</title>

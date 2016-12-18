@@ -1,0 +1,73 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="X-UA-Compatible" content="IE=edge"><title> iOS9 UniversalLink（直达链接）开发 · JOJOTOV</title><meta name="description" content="Univerrsal Link, 深度直达, 直达链接"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="short icon" href="/official_account_avatar.png"><link rel="stylesheet" href="/css/apollo.css"><link rel="search" type="application/opensearchdescription+xml" href="https://dingtz.com/atom.xml" title="JOJOTOV"></head><body><div class="wrap"><header><a href="/" class="logo-link"><img src="/blogLogo.png"></a><ul class="nav nav-list"><li class="nav-list-item"><a href="/" target="_self" class="nav-list-link">BLOG</a></li><li class="nav-list-item"><a href="/archives/" target="_self" class="nav-list-link">ARCHIVE</a></li><li class="nav-list-item"><a href="https://github.com/jojoting" target="_blank" class="nav-list-link">GITHUB</a></li><li class="nav-list-item"><a href="https://cn.linkedin.com/in/同舟-丁-77689b10b" target="_blank" class="nav-list-link">LINKEDIN</a></li><li class="nav-list-item"><a href="/atom.xml" target="_self" class="nav-list-link">RSS</a></li></ul></header><section class="container"><div class="post"><article class="post-block"><h1 class="post-title">iOS9 UniversalLink（直达链接）开发</h1><div class="post-info">Dec 18, 2016</div><div class="post-content"><p>###背景<br>在iOS 9以前，我们从外部启动App都是通过URL Scheme实现跳转的。这种方式虽然可自定程度很高，能够巧妙地实现很多跳转，但弊端也很明显：我们只能通过scheme://example这种格式的链接来实现跳转，而且现在苹果还对这种方式的跳转加了一个提示框：“是否打开XXX”。对于对Web和原生App交互的场景需求量很大的产品来说，这样的跳转方式显然是步骤冗杂的，用户体验并不好。</p>
+<p>iOS 9以后，Universal Link的出现解决了这个问题。它所提供的直接、顺畅、无缝衔接的跳转能够让用户体验提升一个级别。用户可以点击开发者指定的类似于<code>https://example.com/t</code>的URL直接唤醒App，而不需要在浏览器打开再点击其他按钮。</p>
+<p>在你的App中添加这个功能很简单：</p>
+<blockquote>
+<ul>
+<li><p>在<a href="https://developer.apple.com/account/" target="_blank" rel="external">苹果开发者网站</a>中打开需要使用Universal Link功能的App中的Associated Domains</p>
+</li>
+<li><p>上传apple-app-site-association到服务器根目录下</p>
+</li>
+<li><p>在AppDelegate中实现相应的方法</p>
+</li>
+</ul>
+</blockquote>
+<p>###配置<br>首先，我们要在<a href="https://developer.apple.com/account/" target="_blank" rel="external">苹果开发者网站</a>中开启App的Associated Domains功能。</p>
+<p>在<em>Account -&gt; Certificates, Identifiers &amp; Profiles -&gt; App IDs -&gt; YourApp -&gt; Edit</em>中把Associated Domains设置为Enable</p>
+<p>然后我们需要配置一下工程文件，找到<em>Capabilities -&gt; Associated Domains</em></p>
+<p>打开此功能并把你需要跳转的domain加进去，格式为<code>applinks://www.example.com</code></p>
+<p><img src="http://upload-images.jianshu.io/upload_images/797083-d529f0746b0b6cc0.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt="Paste_Image.png"></p>
+<p>###部署</p>
+<blockquote>
+<p>####注意</p>
+<p>首先你的服务器必须得支持SSL</p>
+</blockquote>
+<p>接下来，我们需要上传一个json文件到我们的服务器。json文件以apple-app-site-association命名</p>
+<blockquote>
+<p>####注意</p>
+<p>文件不需要添加任何后缀</p>
+</blockquote>
+<p>json的格式是这样的:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">&#123;</div><div class="line">  &quot;applinks&quot;: &#123;</div><div class="line">    &quot;apps&quot;: [],</div><div class="line">    &quot;details&quot;: [</div><div class="line">      &#123;</div><div class="line">        &quot;appID&quot;: &quot;TeamID.com.domain.App&quot;,</div><div class="line">        &quot;paths&quot;:[ &quot;*&quot; ]</div><div class="line">      &#125;</div><div class="line">    ]</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<ul>
+<li><p><code>appID</code>：TeamID加上Bundle ID</p>
+</li>
+<li><p><code>paths</code>：支持Universal Link，也就是可以跳转的路径。<code>*</code>代表此域名下所有路径都支持，也可以具体制定到某个页面例如<code>/path/page</code>或者某个路径下所有URL例如<code>/path/*</code></p>
+</li>
+</ul>
+<p>关于<code>paths</code>的配置，可以参考苹果官方文档</p>
+<blockquote>
+<ul>
+<li><p>Use * to specify your entire website</p>
+</li>
+<li><p>Include a specific URL, such as /wwdc/news/, to specify a particular link</p>
+</li>
+<li><p>Append <em> to a specific URL, such as /videos/wwdc/2015/</em>, to specify a section of your website</p>
+</li>
+<li><p>In addition to using <em> to match any substring, you can also use ? to match any single character. You can combine both wildcards in a single path, such as /foo/</em>/bar/201?/mypage.</p>
+</li>
+</ul>
+</blockquote>
+<p>最后，我们只需要把配置好的json文件上传到服务器中该域名的根目录下，言下之意，我们可以用GET请求可以获取到<code>https://www.example.com/apple-app-association</code> </p>
+<blockquote>
+<p><strong>再次强调必须是HTTPS协议</strong></p>
+</blockquote>
+<p>当我们的App在设备上第一次运行时，如果支持Associated Domains功能，那么iOS会自动去GET定义的Domain下的<code>apple-app-site-association</code>文件。</p>
+<p>需要留意iOS会先请求<code>https://domain.com/.well-known/apple-app-site-association</code>如果此文件请求不到，再去请求<code>https://domain.com/apple-app-site-association</code></p>
+<p>所以如果想要避免服务器接收过多GET请求，可以直接把<code>apple-app-site-association</code>放在<code>./well-known/</code>目录下</p>
+<blockquote>
+<p>####注意</p>
+<p>服务器上<code>apple-app-site-association</code>的更新不会让iOS本地的<code>apple-app-site-association</code>同步更新，即iOS只会在App第一次启动时请求一次，以后除非App更新或重新安装否则不会在每次打开时请求<code>apple-app-site-association</code></p>
+</blockquote>
+<p>###开发<br>待我们服务器部署好了，用curl测试一下<code>apple-app-site-association</code>能够正确GET到了,那么我们就需要在工程中响应跳转事件了。</p>
+<p>我们在AppDelegate中实现如下代理方法：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">- (<span class="built_in">BOOL</span>)application:(<span class="built_in">UIApplication</span> *)application continueUserActivity:(<span class="built_in">NSUserActivity</span> *)userActivity restorationHandler:(<span class="keyword">void</span> (^)(<span class="built_in">NSArray</span> * _Nullable))restorationHandler&#123;</div></pre></td></tr></table></figure>
+<p>具体实现：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div></pre></td><td class="code"><pre><div class="line">- (<span class="built_in">BOOL</span>)application:(<span class="built_in">UIApplication</span> *)application continueUserActivity:(<span class="built_in">NSUserActivity</span> *)userActivity restorationHandler:(<span class="keyword">void</span> (^)(<span class="built_in">NSArray</span> * _Nullable))restorationHandler&#123;</div><div class="line">    </div><div class="line">    <span class="keyword">if</span> (![userActivity.activityType isEqualToString:<span class="built_in">NSUserActivityTypeBrowsingWeb</span>]) &#123;</div><div class="line">        <span class="keyword">return</span> <span class="literal">YES</span>;</div><div class="line">    &#125;</div><div class="line">    </div><div class="line">    <span class="comment">//读取url地址</span></div><div class="line">    <span class="built_in">NSURL</span> *webUrl = userActivity.webpageURL;</div><div class="line">    </div><div class="line">    </div><div class="line">    <span class="keyword">if</span> (![webUrl.path isEqualToString:<span class="string">@"/show"</span>]) &#123;</div><div class="line">        <span class="comment">//path错误，直接从safari打开</span></div><div class="line">        [[<span class="built_in">UIApplication</span> sharedApplication] openURL:webUrl];</div><div class="line">        <span class="keyword">return</span> <span class="literal">YES</span>;</div><div class="line">    &#125;</div><div class="line">    <span class="comment">//跳转并显示内容</span></div><div class="line">    [[<span class="built_in">NSNotificationCenter</span> defaultCenter] postNotificationName:<span class="string">@"notify"</span> object:<span class="string">@"hello world"</span>];</div><div class="line"></div><div class="line">    </div><div class="line">    <span class="keyword">return</span> <span class="literal">YES</span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>这里的自由度就很高了，我们可以根据传入的任何符合跳转条件的URL进行不同的操作。</p>
+<p>###测试<br>现在一切都已经完成了，现在我们可以在短信中点击一个URL直接跳转到我们的App。至于如何检验URL是否能够跳转，一个快捷方便的方法就是在系统原生App中（如短信、邮件等）长按URL，如果弹出的选项中有<strong><em>在“your app”中打开</em></strong>，那么证明该URL是支持跳转的。</p>
+<blockquote>
+<p>####注意</p>
+<p>非系统原生App不一定能支持直接点击URL跳转，例如在微信中点击URL会首先在微信内的WebView打开，如果要跳转只能再通过Safari打开。</p>
+</blockquote>
+<a id="more"></a>
+</div></article></div></section><footer><div class="paginator"><a href="/2016/12/18/使用presentingViewcontroller属性可能会遇到的坑/" class="next">NEXT</a></div><div class="copyright"><p>© 2016 <a href="https://dingtz.com">Jojo Ding</a>, powered by <a href="https://hexo.io/" target="_blank">Hexo</a> and <a href="https://github.com/pinggod/hexo-theme-apollo" target="_blank">hexo-theme-apollo</a>.</p></div></footer></div><script async src="//cdn.bootcss.com/mathjax/2.6.1/MathJax.js?config=TeX-MML-AM_CHTML"></script></body></html>
